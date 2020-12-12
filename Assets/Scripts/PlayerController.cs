@@ -12,7 +12,11 @@ public class PlayerController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
     }
-
+    
+    public void sendUpdate()
+    {
+        NetworkClient.PositionUpdate(gameObject);
+    }
     // Update is called once per frame
     void Update()
     {
@@ -24,8 +28,5 @@ public class PlayerController : MonoBehaviour
         rb.AddRelativeTorque(Vector3.up * torque * turn);
     }
 
-    public void sendUpdate()
-    {
-        NetworkClient.PositionUpdate(gameObject);
-    }
+    
 }
