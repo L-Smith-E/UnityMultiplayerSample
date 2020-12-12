@@ -8,7 +8,11 @@ namespace NetworkMessages
         PLAYER_UPDATE,
         SERVER_UPDATE,
         HANDSHAKE,
-        PLAYER_INPUT
+        PLAYER_INPUT,
+        CONNECTING_CLIENT,
+        DROPPED_CLIENT,
+        HEARTBEAT,
+        PLAYERID_CMD,
     }
 
     [System.Serializable]
@@ -28,9 +32,9 @@ namespace NetworkMessages
     [System.Serializable]
     public class PlayerUpdateMsg:NetworkHeader{
         public NetworkObjects.NetworkPlayer player;
-        public PlayerUpdateMsg(){      // Constructor
+        public PlayerUpdateMsg(List<NetworkObjects.NetworkPlayer> listOfPlayers){      // Constructor
             cmd = Commands.PLAYER_UPDATE;
-            player = new NetworkObjects.NetworkPlayer();
+            player = new NetworkObjects.NetworkPlayer[listOfPlayers.Count];
         }
     };
 
@@ -41,12 +45,36 @@ namespace NetworkMessages
             myInput = new Input();
         }
     }
+   
+    //player connecting
     [System.Serializable]
     public class  ServerUpdateMsg:NetworkHeader{
-        public List<NetworkObjects.NetworkPlayer> players;
+        public List<NetworkObjects.NetworkPlayer> player_c;
         public ServerUpdateMsg(){      // Constructor
             cmd = Commands.SERVER_UPDATE;
-            players = new List<NetworkObjects.NetworkPlayer>();
+            player_c = new NetworkObjects.NetworkPlayer();
+        }
+    }
+
+    [System.Serializable]
+    public class ConnectingClient : NetworkHeader
+    {
+        public NetworkObjects.NetworkPlayer player;
+        public ConnectingClient()
+        {
+            cmd = Commands.CONNECTING_CLIENT;
+            player = new 
+        }
+    }
+    
+    [System.Serializable]
+    public class DroppedClientMsg : NetworkHeader
+    {
+        public NetworkObjects.NetworkPlayer[] players;
+        public DroppedClientMsg(List<NetworkObjects.NetworkPlayer> listOfPlayers)
+        {
+            players = new NetworkObjects.NetworkPlayer[listOfPlayers.Count];
+            cmd = Commands.DROPPED_CLIENT;
         }
     }
 } 

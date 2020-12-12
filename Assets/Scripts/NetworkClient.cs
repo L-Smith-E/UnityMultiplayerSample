@@ -5,6 +5,7 @@ using NetworkMessages;
 using NetworkObjects;
 using System;
 using System.Text;
+using System.Collections.Generic;
 
 public class NetworkClient : MonoBehaviour
 {
@@ -13,6 +14,10 @@ public class NetworkClient : MonoBehaviour
     public string serverIP;
     public ushort serverPort;
 
+    public GameObject playerGO;
+    public string playerID;
+    public Dictionary<string, GameObject> currentPlayers;
+    private List<Players> newPlayers = new List<Players>();
     
     void Start ()
     {
@@ -20,6 +25,10 @@ public class NetworkClient : MonoBehaviour
         m_Connection = default(NetworkConnection);
         var endpoint = NetworkEndPoint.Parse(serverIP,serverPort);
         m_Connection = m_Driver.Connect(endpoint);
+        newPlayers = new List<string>();
+        droppedPlayers = new List<string>();
+        currentPlayers = new Dictionary<string, GameObject>();
+        initialSetofPlayers = new ListOfPlayers();
     }
     
     void SendToServer(string message){
@@ -57,12 +66,111 @@ public class NetworkClient : MonoBehaviour
             ServerUpdateMsg suMsg = JsonUtility.FromJson<ServerUpdateMsg>(recMsg);
             Debug.Log("Server update message received!");
             break;
+            case Commands.CONNECTING_CLIENT:
+            ConnectClientMsg ccMsg = JsonUtility.FromJson<ConnectClientMsg>(recMsg);
+            Debug.Log("Client connecting update message received!");
+            case Commands.DROPPED_CLIENT:
+            DroppedClientMsg dcMsg = JsonUtility.FromJson<DroppedClientMsg>(recMsg);
+                DestroyPlayers();
+                Debug.Log("Dropped CLient update message received!");
             default:
             Debug.Log("Unrecognized message received!");
+
             break;
         }
     }
 
+    //private void SpawnPlayers()
+    //{
+    //    if (newPlayers.Count > 0)
+    //    {
+    //        foreach (string playerID in newPlayers)
+    //        {
+    //            currentPlayers.Add(playerID, Instantiate(playerGO, new Vector3(0, 0, 0), Quaternion.identity));
+    //            currentPlayers[playerID].name = playerID;
+    //        }
+    //    }
+    //}
+
+    //private void DropPlayers(NetworkObjects.NetworkPlayer[] players)
+    //{
+    //    foreach (NetworkObjects.NetworkPlayer player in players)
+    //    {
+    //        for (int i = 0; i < newPlayers.Count ; i++)
+    //        {
+    //            if currentPlayers[playerID].name = 
+    //        }
+    //    }
+    //}
+
+    void SpawnPlayers()
+    {
+        if (newPlayers.Count > 0)
+        {
+            foreach (string playerID in newPlayers)
+            {
+                currentPlayers.Add(playerID, Instantiate(playerGO, new Vector3(0, 0, 0), Quaternion.identity));
+                currentPlayers[playerID].name = playerID;
+            }
+            newPlayers.Clear();
+        }
+        if (initialSetofPlayers.players.Length > 0)
+        {
+            Debug.Log(initialSetofPlayers);
+            foreach (Player player in initialSetofPlayers.players)
+            {
+                if (player.id == myAddress)
+                    continue;
+                currentPlayers.Add(player.id, Instantiate(playerGO, new Vector3(0, 0, 0), Quaternion.identity));
+                currentPlayers[player.id].GetComponent<Renderer>().material.color = new Color(player.color.R, player.color.G, player.color.B);
+                currentPlayers[player.id].name = player.id;
+            }
+            initialSetofPlayers.players = new Player[0];
+        }
+    }
+
+    void UpdatePlayers()
+    {
+        if (lastestGameState.players.Length > 0)
+        {
+            foreach (NetworkMan.Player player in lastestGameState.players)
+            {
+                string playerID = player.id;
+                currentPlayers[player.id].GetComponent<Renderer>().material.color = new Color(player.color.R, player.color.G, player.color.B);
+                currentPlayers[player.id].transform.position = new Vector3(player.position.x, player.position.y, player.position.z);
+            }
+            lastestGameState.players = new Player[0];
+        }
+    }
+
+    void DestroyPlayers()
+    {
+        if (droppedPlayers.Count > 0)
+        {
+            foreach (string playerID in droppedPlayers)
+            {
+                Debug.Log(playerID);
+                Debug.Log(currentPlayers[playerID]);
+                Destroy(currentPlayers[playerID].gameObject);
+                currentPlayers.Remove(playerID);
+            }
+            droppedPlayers.Clear();
+        }
+    }
+
+    public void PositionUpdate(GameObject PlayerGo)
+    {
+        ServerUpdateMsg serverUpdateMsg = new ServerUpdateMsg();
+        //serverUpdateMsg.PlayerGo
+        serverUpdateMsg  = currentPlayers[myAddress].transform.position.x;
+        //playerPos.pPos.y = currentPlayers[myAddress].transform.position.y;
+        //playerPos.pPos.z = currentPlayers[myAddress].transform.position.z;
+        //
+        Byte[] sendBytes = Encoding.ASCII.GetBytes(JsonUtility.ToJson(serverUpdateMsg));
+        udp.Send(sendBytes, sendBytes.Length);
+    }
+
+    private void UpdatePlayer
     void Disconnect(){
         m_Connection.Disconnect(m_Driver);
         m_Connection = default(NetworkConnection);
